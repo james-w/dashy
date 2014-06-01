@@ -1,6 +1,6 @@
 <html>
 <head>
-<link rel="stylesheet" type="text/css" href="./ulysses/public/ulysses.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="static/ulysses/public/ulysses.css" media="screen" />
 <style>
 </style>
 <style>
@@ -85,6 +85,10 @@
     padding-left: 20px;
 }
 
+.sidebar .spinner .maskedCircle {
+    border: 3px solid white;
+}
+
 .main {
     padding: 10px;
     padding-left: 20px;
@@ -128,6 +132,41 @@
     color: #DF382C;
 }
 
+/* Animation keyframes - you need to add prefixes */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+ 
+/* Loading animation container */
+.spinner {
+    margin: auto;
+    width: 28px;
+    height: 28px;
+}
+ 
+/* Spinning circle (inner circle) */
+.spinner .maskedCircle {
+    width: 20px;
+    height: 20px;
+    border-radius: 12px;
+    border: 3px solid #333;
+}
+ 
+/* Spinning circle mask */
+.spinner .mask {
+    width: 12px;
+    height: 12px;
+    overflow: hidden;
+}
+ 
+/* Spinner */
+.spinner .spinner_holder {
+    width: 26px;
+    height: 26px;
+    animation: spin 1s infinite linear;
+}
+
 </style>
 </head>
 <body>
@@ -154,7 +193,7 @@
 var metrics = [];
 var haproxies = [];
 
-var render_url = 'http://localhost:8080/render?format=json&';
+var render_url = '/render?format=json&';
 
 function haproxy_graphs(haproxy) {
     var graphs = [];
@@ -391,6 +430,7 @@ function onUpdatedMetrics(data, textStatus, jqxhr) {
 
     $.each(haproxies, function(i, haproxy) {
         var haproxy_nav = $("#nav ul[data-type=haproxy]");
+        haproxy_nav.find(".spinner").remove();
         var node = haproxy_nav.find('li[data-prefix="'+haproxy.prefix+'"]');
         if (node.length < 1) {
             node = $("<li />");
@@ -445,6 +485,7 @@ function make_nugget_for_ratio(a, b, object, stat) {
 
 function fill_haproxy_summary(graph, haproxy, data) {
     var values = get_last_values(data);
+    graph.find(".spinner").remove();
     var frontend_holder = graph.find(".frontends");
     $.each(haproxy.frontends, function(i, frontend) {
         if (frontend.name.indexOf('-1000') > -1) {
@@ -481,6 +522,7 @@ function draw_haproxy_summary(id, haproxy) {
     $("<div />", {class: 'ues-u-1'}).html("HAProxy: " + haproxy.name).appendTo(graph);
     $("<div />", {class: "frontends ues-u-1-2"}).html("Frontends").appendTo(graph);
     $("<div />", {class: "backends ues-u-1-2"}).html("Backends").appendTo(graph);
+    graph.append(make_spinner());
     var targets = [];
     $.each(haproxy.frontends, function(i, frontend) {
         if (frontend.name.indexOf('-1000') > -1) {
@@ -520,7 +562,7 @@ function show_summary() {
 }
 
 function onUpdatedMetricsError(jqxhr, textStatus, errorThrown) {
-    console.log(textStatus);
+    console.log(errorThrown);
 }
 
 $("#nav li[data-type=summary]").data("fn", show_summary);
@@ -533,7 +575,13 @@ $("#nav").delegate("li", "click", function(e) {
     e.stopPropagation();
 });
 
-$.ajax({url: "http://localhost:8080/metrics/index.json", dataType: 'json', success: onUpdatedMetrics, error: onUpdatedMetricsError});
+function make_spinner() {
+    return $('<div class="spinner"><div class="spinner_holder"><div class="mask"><div class="maskedCircle"></div></div></div></div>');
+}
+
+$("#nav ul[data-type]").append(make_spinner());
+
+$.ajax({url: "/metrics", dataType: 'json', success: onUpdatedMetrics, error: onUpdatedMetricsError});
 
 </script>
 </html>
