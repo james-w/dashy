@@ -1,0 +1,539 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="./ulysses/public/ulysses.css" media="screen" />
+<style>
+</style>
+<style>
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+
+.line {
+    fill: none;
+    stroke-width: 1.5px;
+}
+
+.line:hover, .line.hover {
+    stroke-width: 4px;
+}
+
+.line0 {
+    stroke: steelblue;
+}
+
+.line1 {
+    stroke: aqua;
+}
+
+.line2 {
+    stroke: antiquewhite;
+}
+
+.line3 {
+    stroke: blueviolet;
+}
+
+.line4 {
+    stroke: chocolate;
+}
+
+.line5 {
+    stroke: goldenrod;
+}
+
+.line6 {
+    stroke: limegreen;
+}
+
+.line7 {
+    stroke: mediumorchid;
+}
+
+.grid .tick {
+    stroke: #DDD;
+    opacity: 0.7;
+}
+.grid path {
+    stroke-width: 0;
+}
+
+.legend {
+    padding: 5px;
+}
+
+.sidebar {
+    background-color: #dd4814;
+    font-size: 13px;
+    /**
+       * 34px is height of standard button (20px + (7px x 2) )
+       * so this allows us to put in buttons and search inputs
+       */
+    line-height: 34px;
+}
+
+.sidebar,
+.sidebar a {
+    color: white;
+}
+
+.sidebar ul {
+    padding: 10px;
+    padding-left: 20px;
+}
+
+.main {
+    padding: 10px;
+    padding-left: 20px;
+}
+
+#nav li {
+    cursor: pointer;
+}
+
+#nav li.hidden > ul {
+    display: none;
+}
+
+#nav li.active {
+    font-weight: bold;
+}
+
+.card {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 4px;
+    border: 1px #aaa solid;
+    padding: 4px;
+    margin-bottom: 8px;
+    box-shadow: 0 0 4px rgba(0,0,0,.3);
+}
+
+.card .neutral {
+    color: #333;
+}
+
+.card .ok {
+    color: #38B44A;
+}
+
+.card .warn {
+    color: #EFB73E;
+}
+
+.card .bad {
+    color: #DF382C;
+}
+
+</style>
+</head>
+<body>
+<div class="ues-page ues-g-r">
+<div class="sidebar ues-u-1-5">
+    <ul id="nav">
+        <li data-type="summary">Summary</li>
+        <li>HAProxy
+        <ul data-type="haproxy">
+        </ul>
+        </li>
+    </ul>
+</div>
+<div class="ues-u-4-5 main">
+<h1 id="title">Summary</h1>
+<div id="graphs"></div>
+<pre id="raw"></pre>
+</div>
+</div>
+</body>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.4.8/d3.min.js"></script>
+<script type="text/javascript">
+var metrics = [];
+var haproxies = [];
+
+var render_url = 'http://localhost:8080/render?format=json&';
+
+function haproxy_graphs(haproxy) {
+    var graphs = [];
+    $.each(haproxy.backends, function(i, backend) {
+        $.each(backend.servers, function(i, server) {
+            console.log(server.prefix);
+            graphs.push(
+              {
+                  "target": [
+                        "alias(" + server.prefix + "slim.1min.value,\"limit\")",
+                        "alias(" + server.prefix + "smax.1min.value,\"max\")",
+                        "alias(" + server.prefix + "scur.1min.value,\"current\")"
+                  ],
+                  "title": haproxy.name + " " + server.name + " backend sessions",
+              }
+            );
+            graphs.push(
+              {
+                  "target": [
+                        "aliasByNode(" + server.prefix + "rate.1min.value,-3)",
+                  ],
+                  "title": haproxy.name + " " + server.name + " backend rate",
+              }
+            );
+            graphs.push(
+              {
+                  "target": [
+                        "alias(" + server.prefix + "qcur.1min.value,\"current\")",
+                        "alias(" + server.prefix + "qmax.1min.value,\"max\")",
+                  ],
+                  "title": server.name + " backend queue",
+              }
+            );
+            graphs.push(
+              {
+                  "target": [
+                        "alias(nonNegativeDerivative(" + server.prefix + "dresp.1min.value),\"denied\")",
+                        "alias(nonNegativeDerivative(" + server.prefix + "eresp.1min.value),\"error\")"
+                  ],
+                  "title": server.name + " backend bad responses",
+              }
+            );
+            graphs.push(
+                {
+                  "target": [
+                    "aliasByNode(nonNegativeDerivative(" + server.prefix + "hrsp_1xx.1min.value),-3)",
+                    "aliasByNode(nonNegativeDerivative(" + server.prefix + "hrsp_2xx.1min.value),-3)",
+                    "aliasByNode(nonNegativeDerivative(" + server.prefix + "hrsp_3xx.1min.value),-3)",
+                    "aliasByNode(nonNegativeDerivative(" + server.prefix + "hrsp_4xx.1min.value),-3)",
+                    "aliasByNode(nonNegativeDerivative(" + server.prefix + "hrsp_5xx.1min.value),-3)",
+                    "aliasByNode(nonNegativeDerivative(" + server.prefix + "hrsp_other.1min.value),-3)"
+                  ],
+                  "title": server.name + " backend response codes",
+                }
+            );
+            graphs.push(
+                {
+                  "target": [
+                    "alias(nonNegativeDerivative(" + server.prefix + "wretr.1min.value),\"retries\")",
+                    "alias(nonNegativeDerivative(" + server.prefix + "wredis.1min.value),\"redispatches\")"
+                  ],
+                  "title": server.name + " backend warnings"
+                }
+            );
+        });
+    });
+    return graphs;
+}
+
+function graph_haproxy(haproxy) {
+    var graphs = [];
+    $("#title").html("HAProxy: " + haproxy.name);
+    graphs = haproxy_graphs(haproxy);
+
+    function querystring_graph (graph) {
+        var qs = '';
+        qs += 'from=-3hour';
+        qs += '&title=' + graph.title;
+        qs += '&' + $.map(graph.target, function(target) { return 'target=' + target; }).join("&");
+        return qs;
+    }
+
+    var graph_nodes = $("<div  />");
+    $("#graphs").html(graph_nodes);
+    $.each(graphs, function(i, graph_info) {
+        var url = render_url + querystring_graph(graph_info);
+        var holder = $("<div />", {id: "graph_" + i});
+        holder.appendTo(graph_nodes);
+        var margin = {top: 20, right: 20, bottom: 30, left: 50},
+            width = 600 - margin.left - margin.right,
+            height = 400 - margin.top - margin.bottom;
+        var x = d3.time.scale.utc().range([0, width]);
+        var y = d3.scale.linear().range([height, 0]);
+        var line = d3.svg.line()
+                .x(function(d,i) {
+                    return x(new Date(d[1] * 1000)); 
+                })
+                .y(function(d) {
+                    return y(d[0]);
+                });
+        function makeXAxis() {
+            return d3.svg.axis().scale(x).orient('bottom').ticks(5);
+        }
+        function makeYAxis() {
+            return d3.svg.axis().scale(y).orient("left").ticks(5);
+        }
+        var graph = d3.select("#graph_" + i).append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate("+margin.left+","+margin.top+")");
+        graph.append("text")
+                .attr("x", (width / 2))             
+                .attr("y", 0)
+                .attr("text-anchor", "middle")  
+                .style("font-size", "16px") 
+                .text(graph_info.title);
+        var legend = graph.append("g")
+                .attr("class", "legend")
+                .attr("x", width - 65)
+                .attr("y", 25)
+                .attr("height", 100)
+                .attr("width", 100);
+        function draw(data, textStatus, jqxhr) {
+            x.domain(d3.extent(data[0].datapoints, function(d) {return new Date(d[1] * 1000);}));
+            if (data.length <= 1) {
+                y.domain(d3.extent(data[0].datapoints, function(d) {return d[0];}));
+            } else {
+                var extents = [];
+                $.each(data, function(i, dataset) {
+                    extents.push(d3.extent(dataset.datapoints, function(d) {return d[0];}));
+                });
+                y.domain([d3.min(extents, function(d) {return d[0];}), d3.max(extents, function(d) {return d[1];})]);
+            }
+            graph.append("g")
+                  .attr("class", "x axis")
+                  .attr("transform", "translate(0,"+height+")")
+                  .call(makeXAxis());
+            graph.append("g")
+                  .attr("class", "y axis")
+                  .call(makeYAxis());
+            graph.append("g")
+                  .attr("class", "grid")
+                  .attr("transform", "translate(0,"+height+")")
+                  .call(makeXAxis().tickSize(-height, 0, 0).tickFormat(""));
+            graph.append("g")
+                  .attr("class", "grid")
+                  .call(makeYAxis().tickSize(-width, 0, 0).tickFormat(""));
+            $.each(data, function(i, dataset) {
+                var path = graph.append("path").datum(dataset.datapoints).attr("class", "line line"+i).attr("d", line);
+                path.append('text').text(dataset.target);
+                function onmouseover() {
+                    path.classed('hover', true);
+                }
+                function onmouseout() {
+                    path.classed('hover', false);
+                }
+                var legend_box = legend.append('g');
+                legend_box.append("rect")
+                      .attr("x", width - 65)
+                      .attr("y", i*25)
+                      .attr("width", 10)
+                      .attr("height", 10)
+                      .attr("class", "line"+i)
+                      .on('mouseover', onmouseover)
+                      .on('mouseout', onmouseout);
+                legend_box.append("text")
+                      .attr("x", width - 50)
+                      .attr("y", i * 25 + 8)
+                      .attr("height",30)
+                      .attr("width",100)
+                      .text(dataset.target)
+                      .on('mouseover', onmouseover)
+                      .on('mouseout', onmouseout);
+            });
+        }
+        $.ajax({url: url, dataType: 'json', success: draw});
+    });
+    $("#raw").text(JSON.stringify(graphs, null, 4));
+}
+
+function onUpdatedMetrics(data, textStatus, jqxhr) {
+    metrics = data;
+    var tree = {};
+    $.each(metrics, function(i, metric) {
+        var node = tree;
+        parts = metric.split('.');
+        $.each(parts, function(j, part) {
+            if (!node.hasOwnProperty(part)) {
+                node[part] = {};
+            }
+            node = node[part];
+        });
+    });
+    function check_all (current, subtree, prefix) {
+        if (subtree.haproxy) {
+            var haproxy = {name: current, backends: [], frontends: [], prefix: prefix + current + '.haproxy.'};
+            var fill_haproxy = function (current, subtree, prefix) {
+                if (subtree.hasOwnProperty('BACKEND')) {
+                    backend = {
+                        name: current,
+                        prefix: prefix + current + '.BACKEND.',
+                        servers: [],
+                    };
+                    $.each(subtree, function(backend_server, server_info) {
+                        if (backend_server != 'BACKEND') {
+                            backend.servers.push({
+                                name: backend_server,
+                                prefix: prefix + current + "." + backend_server + ".",
+                            });
+                        }
+                    });
+                    haproxy.backends.push(backend);
+                }
+                if (subtree.hasOwnProperty('FRONTEND')) {
+                    frontend = {
+                        name: current,
+                        prefix: prefix + current + '.FRONTEND.'
+                    };
+                    haproxy.frontends.push(frontend);
+                }
+            };
+            walk(subtree.haproxy, haproxy.prefix, fill_haproxy);
+            haproxies.push(haproxy);
+        }
+    }
+    function walk(subtree, prefix, fn) {
+        $.each(subtree, function(part, nexttree) {
+            fn(part, nexttree, prefix);
+            walk(nexttree, prefix + part + ".", fn);
+        });
+    }
+    walk(tree, "", check_all);
+
+    $.each(haproxies, function(i, haproxy) {
+        var haproxy_nav = $("#nav ul[data-type=haproxy]");
+        var node = haproxy_nav.find('li[data-prefix="'+haproxy.prefix+'"]');
+        if (node.length < 1) {
+            node = $("<li />");
+            node.data("prefix", haproxy.prefix);
+            node.data("fn", graph_haproxy);
+            node.data("data", haproxy);
+            node.text(haproxy.name);
+            node.appendTo(haproxy_nav);
+        } else {
+            node.data('data', haproxy);
+        }
+    });
+    show_summary();
+}
+
+function get_last_value(datapoints) {
+    return datapoints[datapoints.length-1][0];
+}
+
+function get_last_values(data) {
+    var values = {};
+    $.each(data, function(i, target) {
+        values[target.target] = get_last_value(target.datapoints);
+    });
+    return values;
+}
+
+function make_nugget(html, object, stat, state) {
+    var nugget = $("<div />", {title: stat + "(" + object + ")", class: state}).html(html);
+    return nugget;
+}
+
+function classify_percentage(percent) {
+    var state = 'ok';
+    if (percent > 0.98) {
+        state = 'bad';
+    } else if (percent > 0.9) {
+        state = 'warn';
+    }
+    return state;
+}
+
+function make_nugget_for_ratio(a, b, object, stat) {
+    var text = a + '/' + b;
+    var state = classify_percentage(a/b);
+    if (b == 0) {
+        text = a;
+        state = 'neutral';
+    }
+    return make_nugget(text, object, stat, state);
+}
+
+function fill_haproxy_summary(graph, haproxy, data) {
+    var values = get_last_values(data);
+    var frontend_holder = graph.find(".frontends");
+    $.each(haproxy.frontends, function(i, frontend) {
+        if (frontend.name.indexOf('-1000') > -1) {
+            return;
+        }
+        var frontend_name = frontend.name + ' frontend';
+        var current_sessions = values[frontend.name+' current sessions'].toFixed(0);
+        var session_limit = values[frontend.name+' session limit'].toFixed(0);
+        make_nugget_for_ratio(current_sessions, session_limit, frontend_name, 'sessions in use').appendTo(frontend_holder);
+    });
+    var backend_holder = graph.find(".backends");
+    $.each(haproxy.backends, function(i, backend) {
+        if (backend.name == 'haproxy_monitoring') {
+            return;
+        }
+        backend_name = backend.name + ' backend';
+        make_nugget(values[backend.name+' rate'].toFixed(2) + '/s', backend_name, 'request rate', 'neutral').appendTo(backend_holder);
+        var current_sessions = values[backend.name+' current sessions'].toFixed(0);
+        var session_limit = values[backend.name+' session limit'].toFixed(0);
+        make_nugget_for_ratio(current_sessions, session_limit, backend_name, 'sessions in use').appendTo(backend_holder);
+        var queue_length = values[backend.name+' current queue'].toFixed(0);
+        var state = 'ok';
+        if (queue_length > current_sessions) {
+            state = 'bad';
+        } else if (queue_length > 0) {
+            state = 'warn';
+        }
+        make_nugget(queue_length, backend_name, 'queued requests', state).appendTo(backend_holder);
+    });
+}
+
+function draw_haproxy_summary(id, haproxy) {
+    var graph = $("<div />", {class: 'card ues-g'}).appendTo($('#'+id));
+    $("<div />", {class: 'ues-u-1'}).html("HAProxy: " + haproxy.name).appendTo(graph);
+    $("<div />", {class: "frontends ues-u-1-2"}).html("Frontends").appendTo(graph);
+    $("<div />", {class: "backends ues-u-1-2"}).html("Backends").appendTo(graph);
+    var targets = [];
+    $.each(haproxy.frontends, function(i, frontend) {
+        if (frontend.name.indexOf('-1000') > -1) {
+            return;
+        }
+        targets.push('target=alias(movingAverage('+frontend.prefix+'scur.1min.value,10),"'+frontend.name+' current sessions")');
+        targets.push('target=alias(movingAverage('+frontend.prefix+'slim.1min.value,10),"'+frontend.name+' session limit")');
+    });
+    $.each(haproxy.backends, function(i, backend) {
+        if (backend.name == 'haproxy_monitoring') {
+            return;
+        }
+        targets.push('target=alias(movingAverage('+backend.prefix+'qcur.1min.value,10),"'+backend.name+' current queue")');
+        targets.push('target=alias(movingAverage('+backend.prefix+'rate.1min.value,10),"'+backend.name+' rate")');
+        targets.push('target=alias(movingAverage(sumSeries('+$.map(backend.servers, function(server) { return server.prefix+'scur.1min.value'; }).join(',')+'),10),"'+backend.name+' current sessions")');
+        targets.push('target=alias(movingAverage(sumSeries('+$.map(backend.servers, function(server) { return server.prefix+'slim.1min.value'; }).join(',')+'),10),"'+backend.name+' session limit")');
+    });
+    var qs = 'from=-30min&' + targets.join('&');
+    return {graph: graph, qs: qs, callback: fill_haproxy_summary};
+}
+
+function show_summary() {
+    $("#title").html("Summary");
+    $("#raw").text("");
+    var graph_nodes = $("<div  />");
+    $("#graphs").html(graph_nodes);
+    $.each(haproxies, function(i, haproxy) {
+        var holder = $("<div  />", {id: "haproxy_"+haproxy.name, data: haproxy});
+        holder.appendTo(graph_nodes);
+        var graph_request = draw_haproxy_summary(holder.attr('id'), haproxy);
+        $.ajax({url: render_url + graph_request.qs, dataType: 'json', success: function(data, textStatus, jqxhr){
+            graph_request.callback(graph_request.graph, haproxy, data);
+        }, failure: function(jqxhr, textStatus, errorThrown) {
+            holder.html("Error loading data: " + textStatus);
+        }});
+    });
+}
+
+function onUpdatedMetricsError(jqxhr, textStatus, errorThrown) {
+    console.log(textStatus);
+}
+
+$("#nav li[data-type=summary]").data("fn", show_summary);
+
+$("#nav").delegate("li", "click", function(e) {
+    $(this).toggleClass("hidden");
+    if ($(this).data("fn")) {
+        $(this).data("fn").call($(this).data("data"), $(this).data("data"));
+    }
+    e.stopPropagation();
+});
+
+$.ajax({url: "http://localhost:8080/metrics/index.json", dataType: 'json', success: onUpdatedMetrics, error: onUpdatedMetricsError});
+
+</script>
+</html>
