@@ -5,6 +5,15 @@
 </style>
 <style>
 
+html {
+    height: 100%;
+}
+
+body {
+    min-height: 100%;
+    background-color: #eee;
+}
+
 .axis path,
 .axis line {
     fill: none;
@@ -66,32 +75,36 @@
 }
 
 .sidebar {
-    background-color: #dd4814;
     font-size: 13px;
     /**
        * 34px is height of standard button (20px + (7px x 2) )
        * so this allows us to put in buttons and search inputs
        */
     line-height: 34px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    border-right: 1px solid #333;
 }
 
-.sidebar,
-.sidebar a {
-    color: white;
+@media (min-width: 767px) {
+    .sidebar {
+        height: 100%;
+    }
 }
 
 .sidebar ul {
-    padding: 10px;
-    padding-left: 20px;
-}
-
-.sidebar .spinner .maskedCircle {
-    border: 3px solid white;
+    padding-left: 15px;
 }
 
 .main {
-    padding: 10px;
-    padding-left: 20px;
+    padding: 5px 25px 15px 25px;
+    height: 100%;
+}
+
+@media (min-width: 767px) {
+    .main {
+        height: 100%;
+    }
 }
 
 #nav li {
@@ -110,10 +123,11 @@
     width: 100%;
     max-width: 400px;
     border-radius: 4px;
-    border: 1px #aaa solid;
-    padding: 4px;
+    padding: 15px;
+    margin-right: 8px;
     margin-bottom: 8px;
-    box-shadow: 0 0 4px rgba(0,0,0,.3);
+    display: inline-block;
+    background-color: #fff;
 }
 
 .card .neutral {
@@ -121,7 +135,7 @@
 }
 
 .card .ok {
-    color: #38B44A;
+    color: #333;
 }
 
 .card .warn {
@@ -134,7 +148,6 @@
 
 .card .card-title {
     font-size: 16px;
-    color: #DD4814;
 }
 
 .card .card-sub-heading {
@@ -200,12 +213,17 @@
 <script src="/static/js/spinner.js"></script>
 <script src="/static/js/summary.js"></script>
 <script src="/static/js/summary_haproxy.js"></script>
+<script src="/static/js/card_generator.js"></script>
 <script src="/static/js/card.js"></script>
 <script type="text/javascript">
 var metrics = [];
 var services = {haproxies: []};
 
 var render_url = '/render?format=json&';
+
+function render(qs, callback) {
+    $.ajax({url: render_url + qs, dataType: 'json', success: callback});
+}
 
 function haproxy_graphs(haproxy) {
     var graphs = [];

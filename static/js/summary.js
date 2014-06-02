@@ -26,13 +26,11 @@
             this.element.find("#graphs").html(graph_nodes);
             var summary = this;
             $.each(this.options.services.haproxies, function(i, haproxy) {
-                var holder = $("<div  />", {id: "haproxy_"+haproxy.name, data: haproxy}).appendTo(graph_nodes);
-                holder.summary_haproxy({description: haproxy});
-                $.ajax({url: summary.options.render_url + holder.summary_haproxy('qs'), dataType: 'json', success: function(data, textStatus, jqxhr){
-                    holder.summary_haproxy('data', data);
-                }, failure: function(jqxhr, textStatus, errorThrown) {
-                    holder.html("Error loading data: " + textStatus);
-                }});
+                var holder = $("<span  />", {id: "haproxy_"+haproxy.name, data: haproxy}).appendTo(graph_nodes);
+                haproxy_summary(haproxy, holder);
+                holder.on('click', function(e) {
+                    $(this).trigger('changePage', ['haproxy', haproxy.name]);
+                });
             });
         },
     });
