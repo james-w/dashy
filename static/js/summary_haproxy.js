@@ -106,6 +106,40 @@ function haproxy_summary(haproxy, target) {
                 prefix: backend.prefix,
             }
         );
+        card_description.sections[1].nuggets.push(
+            {
+                targets: [
+                    {
+                        stat: 'scale(movingAverage(nonNegativeDerivative('+backend.prefix+'downtime.1min.value),10),0.0166)',
+                        name: 'downtime',
+                    },
+                ],
+                value: 'downtime',
+                precision: 2,
+                suffix: '/s',
+                object_name: backend.name + ' backend',
+                label: 'downtime',
+                threshold: 0,
+                prefix: backend.prefix,
+            }
+        );
+        card_description.sections[1].nuggets.push(
+            {
+                targets: [
+                    {
+                        stat: 'scale(movingAverage(nonNegativeDerivative(sumSeries('+backend.prefix+'{wretr,wredis}.1min.value)),10),0.0166)',
+                        name: 'retries',
+                    },
+                ],
+                value: 'retries',
+                precision: 2,
+                suffix: '/s',
+                object_name: backend.name + ' backend',
+                label: 'retries',
+                threshold: 0,
+                prefix: backend.prefix,
+            }
+        );
     });
     generate_and_fetch_card(card_description, target);
 }

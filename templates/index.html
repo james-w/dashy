@@ -34,32 +34,64 @@ body {
     stroke: steelblue;
 }
 
+.legend .line0 {
+    fill: steelblue;
+}
+
 .line1 {
-    stroke: aqua;
+    stroke: brown;
+}
+
+.legend .line1 {
+    fill: brown;
 }
 
 .line2 {
-    stroke: antiquewhite;
+    stroke: darkgreen;
+}
+
+.legend .line2 {
+    fill: darkgreen;
 }
 
 .line3 {
     stroke: blueviolet;
 }
 
+.legend .line3 {
+    fill: blueviolet;
+}
+
 .line4 {
     stroke: chocolate;
+}
+
+.legend .line4 {
+    fill: chocolate;
 }
 
 .line5 {
     stroke: goldenrod;
 }
 
+.legend .line5 {
+    fill: goldenrod;
+}
+
 .line6 {
     stroke: limegreen;
 }
 
+.legend .line6 {
+    fill: limegreen;
+}
+
 .line7 {
     stroke: mediumorchid;
+}
+
+.legend .line7 {
+    fill: mediumorchid;
 }
 
 .grid .tick {
@@ -83,12 +115,13 @@ body {
     line-height: 34px;
     padding-top: 5px;
     padding-bottom: 5px;
-    border-right: 1px solid #333;
+    border-bottom: 1px solid #333;
 }
 
 @media (min-width: 767px) {
     .sidebar {
         height: 100%;
+        border-right: 1px solid #333;
     }
 }
 
@@ -196,7 +229,7 @@ body {
 <div class="ues-page ues-g-r">
 <div class="sidebar ues-u-1-5">
     <ul id="nav">
-        <li data-page="summary">Summary</li>
+        <li data-page="/summary">Summary</li>
         <li>HAProxy
         <ul data-type="haproxy">
         </ul>
@@ -215,6 +248,7 @@ body {
 <script src="/static/js/summary_haproxy.js"></script>
 <script src="/static/js/card_generator.js"></script>
 <script src="/static/js/card.js"></script>
+<script src="/static/js/page_stack.js"></script>
 <script type="text/javascript">
 var metrics = [];
 var services = {haproxies: []};
@@ -228,6 +262,9 @@ function render(qs, callback) {
 function haproxy_graphs(haproxy) {
     var graphs = [];
     $.each(haproxy.backends, function(i, backend) {
+        if (backend.name == 'haproxy_monitoring') {
+            return;
+        }
         $.each(backend.servers, function(i, server) {
             graphs.push(
               {
@@ -250,17 +287,9 @@ function haproxy_graphs(haproxy) {
             graphs.push(
               {
                   "target": [
-                        "alias(" + server.prefix + "qcur.1min.value,\"current\")",
-                        "alias(" + server.prefix + "qmax.1min.value,\"max\")",
-                  ],
-                  "title": server.name + " backend queue",
-              }
-            );
-            graphs.push(
-              {
-                  "target": [
-                        "alias(nonNegativeDerivative(" + server.prefix + "dresp.1min.value),\"denied\")",
-                        "alias(nonNegativeDerivative(" + server.prefix + "eresp.1min.value),\"error\")"
+                        "alias(scale(nonNegativeDerivative(" + server.prefix + "dresp.1min.value),0.0166),\"denied\")",
+                        "alias(scale(nonNegativeDerivative(" + server.prefix + "eresp.1min.value),0.0166),\"error\")",
+                        "alias(scale(nonNegativeDerivative(" + server.prefix + "econ.1min.value),0.0166),\"connection error\")"
                   ],
                   "title": server.name + " backend bad responses",
               }
@@ -268,12 +297,12 @@ function haproxy_graphs(haproxy) {
             graphs.push(
                 {
                   "target": [
-                    "aliasByNode(nonNegativeDerivative(" + server.prefix + "hrsp_1xx.1min.value),-3)",
-                    "aliasByNode(nonNegativeDerivative(" + server.prefix + "hrsp_2xx.1min.value),-3)",
-                    "aliasByNode(nonNegativeDerivative(" + server.prefix + "hrsp_3xx.1min.value),-3)",
-                    "aliasByNode(nonNegativeDerivative(" + server.prefix + "hrsp_4xx.1min.value),-3)",
-                    "aliasByNode(nonNegativeDerivative(" + server.prefix + "hrsp_5xx.1min.value),-3)",
-                    "aliasByNode(nonNegativeDerivative(" + server.prefix + "hrsp_other.1min.value),-3)"
+                    "aliasByNode(scale(nonNegativeDerivative(" + server.prefix + "hrsp_1xx.1min.value),0.0166),-3)",
+                    "aliasByNode(scale(nonNegativeDerivative(" + server.prefix + "hrsp_2xx.1min.value),0.0166),-3)",
+                    "aliasByNode(scale(nonNegativeDerivative(" + server.prefix + "hrsp_3xx.1min.value),0.0166),-3)",
+                    "aliasByNode(scale(nonNegativeDerivative(" + server.prefix + "hrsp_4xx.1min.value),0.0166),-3)",
+                    "aliasByNode(scale(nonNegativeDerivative(" + server.prefix + "hrsp_5xx.1min.value),0.0166),-3)",
+                    "aliasByNode(scale(nonNegativeDerivative(" + server.prefix + "hrsp_other.1min.value),0.0166),-3)"
                   ],
                   "title": server.name + " backend response codes",
                 }
@@ -288,11 +317,24 @@ function haproxy_graphs(haproxy) {
                 }
             );
         });
+        graphs.push(
+          {
+              "target": [
+                    "alias(" + backend.prefix + "qcur.1min.value,\"current\")",
+                    "alias(" + backend.prefix + "qmax.1min.value,\"max\")",
+              ],
+              "title": backend.name + " backend queue",
+          }
+        );
     });
     return graphs;
 }
 
-function graph_haproxy(haproxy) {
+function graph_haproxy(haproxy, target) {
+    $(target).empty();
+    $(target).append($("<h1 />", {id: 'title'}));
+    $(target).append($("<div />", {id: 'graphs'}));
+    $(target).append($("<div />", {id: 'raw'}));
     var graphs = [];
     $("#title").html("HAProxy: " + haproxy.name);
     graphs = haproxy_graphs(haproxy);
@@ -464,8 +506,7 @@ function onUpdatedMetrics(data, textStatus, jqxhr) {
         if (node.length < 1) {
             node = $("<li />");
             node.data("prefix", haproxy.prefix);
-            node.data("page", 'haproxy');
-            node.data("data", haproxy.name);
+            node.data("page", '/haproxy/' + haproxy.name);
             node.text(haproxy.name);
             node.appendTo(haproxy_nav);
         } else {
@@ -519,7 +560,7 @@ function onUpdatedMetricsError(jqxhr, textStatus, errorThrown) {
 $("#nav").delegate("li", "click", function(e) {
     $(this).toggleClass("hidden");
     if ($(this).data("page")) {
-        $(this).trigger("changePage", [$(this).data("page"), $(this).data("data")]);
+        location.hash = $(this).data("page");
     }
     e.stopPropagation();
 });
@@ -528,33 +569,13 @@ $("#nav ul[data-type]").spinner();
 
 $.ajax({url: "/metrics", dataType: 'json', success: onUpdatedMetrics, error: onUpdatedMetricsError});
 
-var page_stack = {
-    book: null,
-    bind_to: function(node) {
-        this.book = node;
-        this.book.on("changePage", $.proxy(this.onChangePage, this));
-    },
-    switch_to: function(name, data) {
-        if (name == 'summary') {
-            this.book.summary({render_url: render_url, services: services});
-        } else if (name == 'haproxy') {
-            var haproxy = services.haproxies.filter(function(haproxy) { return haproxy.name = data; })[0];
-            graph_haproxy(haproxy);
-        } else {
-            console.error("Unknown page: " + name);
-        }
-    },
-    add_index: function(index) {
-        index.on('changePage', $.proxy(this.onChangePage, this));
-    },
-    onChangePage: function(e, name, data) {
-        this.switch_to(name, data);
-    },
-};
+$(".main").page_stack();
 
-page_stack.bind_to($(".main"));
-page_stack.add_index($("#nav"));
-page_stack.switch_to('summary');
+$(function(){
+  $(".main").page_stack('bind');
+  $(window).trigger( "hashchange" );
+});
+
 
 </script>
 </html>

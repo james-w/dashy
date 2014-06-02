@@ -40,11 +40,21 @@ var _fetch_data = function(description, target) {
                     };
                 } else {
                     var state = nugget.state;
-                    if ($.isFunction(state)) {
-                        state = state.call(this, data, get_alias);
+                    var value = data[get_alias(nugget.value)]
+                    if (!state) {
+                        if (nugget.threshold !== undefined) {
+                            state = 'ok';
+                            if (value > nugget.threshold) {
+                                state = 'bad';
+                            }
+                        }
+                    } else {
+                        if ($.isFunction(state)) {
+                            state = state.call(this, data, get_alias);
+                        }
                     }
                     return {
-                        text: data[get_alias(nugget.value)] + (nugget.suffix || ''),
+                        text: value.toFixed(nugget.precision || 0) + (nugget.suffix || ''),
                         object: nugget.object_name,
                         stat: nugget.label,
                         state: state,

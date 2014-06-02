@@ -29,7 +29,7 @@
                 var holder = $("<span  />", {id: "haproxy_"+haproxy.name, data: haproxy}).appendTo(graph_nodes);
                 haproxy_summary(haproxy, holder);
                 holder.on('click', function(e) {
-                    $(this).trigger('changePage', ['haproxy', haproxy.name]);
+                    location.hash = '/haproxy/' + haproxy.name;
                 });
             });
         },
