@@ -302,31 +302,6 @@ function get_last_values(data) {
     return values;
 }
 
-function make_nugget(html, object, stat, state) {
-    var nugget = $("<div />", {title: stat + " (" + object + ")", class: state}).html(html);
-    return nugget;
-}
-
-function classify_percentage(percent) {
-    var state = 'ok';
-    if (percent > 0.98) {
-        state = 'bad';
-    } else if (percent > 0.9) {
-        state = 'warn';
-    }
-    return state;
-}
-
-function make_nugget_for_ratio(a, b, object, stat) {
-    var text = a + '/' + b;
-    var state = classify_percentage(a/b);
-    if (b === 0) {
-        text = a;
-        state = 'neutral';
-    }
-    return make_nugget(text, object, stat, state);
-}
-
 function onUpdatedMetricsError(jqxhr, textStatus, errorThrown) {
     console.error(errorThrown);
 }

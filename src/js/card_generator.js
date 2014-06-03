@@ -42,6 +42,9 @@
                     } else {
                         var state = nugget.state;
                         var value = data[get_alias(nugget.value)];
+                        if (nugget.precision === 0) {
+                            value = Math.round(value);
+                        }
                         if (!state) {
                             if (nugget.threshold !== undefined) {
                                 state = 'ok';
