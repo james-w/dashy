@@ -58,11 +58,11 @@ module.exports = function (grunt) {
         watch: {
             all: {
                 files: ['.jshintrc', 'Gruntfile.js', SRC + '/**/*.js', SRC + '/**/*.css', SRC + '/**/*.html', SRC + '/**/*.jsx'],
-                tasks: ['test', 'clean:build', 'react', 'minify']
+                tasks: ['test', 'clean:build', 'cssmin', 'react', 'minify']
             },
             notest: {
                 files: ['Gruntfile.js', SRC + '/**/*.js', SRC + '/**/*.css', SRC + '/**/*.html', SRC + '/**/*.jsx'],
-                tasks: ['lint', 'clean:build', 'react', 'minify']
+                tasks: ['lint', 'clean:build', 'cssmin', 'react', 'minify']
             }
         }
 
@@ -80,7 +80,7 @@ module.exports = function (grunt) {
     grunt.registerTask('lint', ['jshint']);
     grunt.registerTask('test', ['lint']);
     grunt.registerTask('minify', ['uglify', 'cssmin']);
-    grunt.registerTask('build', ['clean:build', 'react', 'minify']);
+    grunt.registerTask('build', ['clean:build', 'cssmin', 'react', 'minify']);
 
 
 };

@@ -136,7 +136,7 @@ function haproxy_summary(haproxy, target) {
                 suffix: '/s',
                 object_name: backend.name + ' backend',
                 label: 'retries',
-                threshold: 0,
+                threshold: 1,
                 prefix: backend.prefix,
             }
         );
