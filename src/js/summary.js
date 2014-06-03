@@ -26,7 +26,11 @@
             var summary = this;
             $.each(this.options.services.haproxies, function(i, haproxy) {
                 var holder = $("<span  />", {id: "haproxy_"+haproxy.name, data: haproxy}).appendTo(graph_nodes);
-                haproxy_summary(haproxy, holder);
+                var model = new HaproxySummaryModel();
+                model.set({spec: haproxy});
+                holder.each(function() {
+                    React.renderComponent(new HaproxySummary({model: model}), this);
+                });
                 holder.on('click', function(e) {
                     location.hash = '/haproxy/' + haproxy.name;
                 });

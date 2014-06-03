@@ -21,6 +21,8 @@
 <script src="/static/lib/jquery/dist/jquery.min.js"></script>
 <script src="/static/lib/jqueryui/ui/jquery-ui.js"></script>
 <script src="/static/lib/d3/d3.min.js"></script>
+<script src="/static/lib/underscore/underscore.js"></script>
+<script src="/static/lib/backbone/backbone.js"></script>
 <script src="/static/lib/react/react.js"></script>
 <script src="/static/js/dashy-min.js"></script>
 <script type="text/javascript">
@@ -288,18 +290,6 @@ function onUpdatedMetrics(data, textStatus, jqxhr) {
         }
     });
     $(".main").summary('services', services);
-}
-
-function get_last_value(datapoints) {
-    return datapoints[datapoints.length-1][0];
-}
-
-function get_last_values(data) {
-    var values = {};
-    $.each(data, function(i, target) {
-        values[target.target] = get_last_value(target.datapoints);
-    });
-    return values;
 }
 
 function onUpdatedMetricsError(jqxhr, textStatus, errorThrown) {

@@ -6,21 +6,21 @@ var Card = React.createClass({displayName: 'Card',
         $.each(this.props.sections, function(i, section) {
             var nuggets = [];
             $.each(section.nuggets || [], function(i, nugget) {
-                var key = nugget.object + '-' + nugget.stat;
+                var key = nugget.object_name + '-' + nugget.label;
                 if (nugget.ratio) {
                     nuggets.push(<RatioNugget 
                                     a={nugget.a}
                                     b={nugget.b}
-                                    stat={nugget.stat}
-                                    object={nugget.object}
+                                    stat={nugget.label}
+                                    object={nugget.object_name}
                                     key={key}
                                  />);
                 } else {
                     nuggets.push(<Nugget
                                     text={nugget.text}
                                     state={nugget.state}
-                                    stat={nugget.stat}
-                                    object={nugget.object}
+                                    stat={nugget.label}
+                                    object={nugget.object_name}
                                     key={key}
                                  />);
                 }
@@ -45,11 +45,3 @@ var Card = React.createClass({displayName: 'Card',
             </div>;
     },
 });
-
-(function ($) {
-    $.fn.card = function(description) {
-        this.empty();
-        React.renderComponent(Card(description), this.get(0));
-        return
-    };
-}(jQuery));
