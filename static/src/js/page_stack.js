@@ -11,7 +11,7 @@
             if (details[1] == 'summary') {
                 this.element.summary({render_url: render_url, services: services});
             } else if (details[1] == 'haproxy') {
-                var haproxy = services.haproxies.filter(function(haproxy) { return haproxy.name = details[2]; })[0];
+                var haproxy = services.haproxies.filter(function(haproxy) { return haproxy.name == details[2]; })[0];
                 graph_haproxy(haproxy, this.element);
             } else {
                 console.error("Unknown page: " + name);

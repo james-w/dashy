@@ -141,5 +141,5 @@ function haproxy_summary(haproxy, target) {
             }
         );
     });
-    generate_and_fetch_card(card_description, target);
+    $.generate_and_fetch_card(card_description, target);
 }
