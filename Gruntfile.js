@@ -1,13 +1,13 @@
 module.exports = function (grunt) {
     "use strict";
-    var SRC = 'static/src';
+    var SRC = 'src';
 
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
 
         clean: {
             build: [
-                SRC + '/jsx/built/', 
+                'static/src', 
                 'static/js',
                 'static/css'
             ]
@@ -34,12 +34,24 @@ module.exports = function (grunt) {
             ]
         },
 
+        copy: {
+            main: {
+                files: [
+                    {
+                        expand: true,
+                        src: [SRC + '/**/*'],
+                        dest: 'static/'
+                    }
+                ]
+            }
+        },
+
         react: {
             files: {
                 expand: true,
                 cwd: SRC + '/jsx/',
                 src: ['*.jsx'],
-                dest: SRC + '/jsx/built/',
+                dest: 'static/src/js/',
                 ext: '.js'
             }
         },
@@ -50,7 +62,7 @@ module.exports = function (grunt) {
             },
             prod: {
                 files: {
-                    'static/js/dashy-min.js': [ SRC + '/js/*.js', SRC + '/jsx/built/*.js' ]
+                    'static/js/dashy-min.js': [ 'static/src/js/*.js' ]
                 }
             }
         },
@@ -58,17 +70,18 @@ module.exports = function (grunt) {
         watch: {
             all: {
                 files: ['.jshintrc', 'Gruntfile.js', SRC + '/**/*.js', SRC + '/**/*.css', SRC + '/**/*.html', SRC + '/**/*.jsx'],
-                tasks: ['test', 'clean:build', 'cssmin', 'react', 'minify']
+                tasks: ['test', 'clean:build', 'minify']
             },
             notest: {
                 files: ['Gruntfile.js', SRC + '/**/*.js', SRC + '/**/*.css', SRC + '/**/*.html', SRC + '/**/*.jsx'],
-                tasks: ['lint', 'clean:build', 'cssmin', 'react', 'minify']
+                tasks: ['lint', 'clean:build', 'minify']
             }
         }
 
     });
 
     grunt.loadNpmTasks('grunt-contrib-clean');
+    grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-cssmin');
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-uglify');
@@ -79,8 +92,8 @@ module.exports = function (grunt) {
 
     grunt.registerTask('lint', ['jshint']);
     grunt.registerTask('test', ['lint']);
-    grunt.registerTask('minify', ['uglify', 'cssmin']);
-    grunt.registerTask('build', ['clean:build', 'cssmin', 'react', 'minify']);
+    grunt.registerTask('minify', ['copy', 'react', 'uglify', 'cssmin']);
+    grunt.registerTask('build', ['clean:build', 'minify']);
 
 
 };

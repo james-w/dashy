@@ -1,7 +1,4 @@
 node_modules
 .env
-static/css
-static/js
-static/lib
-static/src/jsx/built/
+static/*
 dashy.egg-info
