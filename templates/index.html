@@ -6,13 +6,6 @@
 <body>
 <div class="ues-page ues-g-r">
 <div class="sidebar ues-u-1-5">
-    <ul id="nav">
-        <li data-page="/summary">Summary</li>
-        <li>HAProxy
-        <ul data-type="haproxy">
-        </ul>
-        </li>
-    </ul>
 </div>
 <div class="ues-u-4-5 main">
 </div>
@@ -275,20 +268,7 @@ function onUpdatedMetrics(data, textStatus, jqxhr) {
     }
     walk(tree, "", check_all);
 
-    $.each(services.haproxies, function(i, haproxy) {
-        var haproxy_nav = $("#nav ul[data-type=haproxy]");
-        haproxy_nav.find(".spinner").remove();
-        var node = haproxy_nav.find('li[data-prefix="'+haproxy.prefix+'"]');
-        if (node.length < 1) {
-            node = $("<li />");
-            node.data("prefix", haproxy.prefix);
-            node.data("page", '/haproxy/' + haproxy.name);
-            node.text(haproxy.name);
-            node.appendTo(haproxy_nav);
-        } else {
-            node.data('data', haproxy);
-        }
-    });
+    React.renderComponent(new Navigation({environments: [{name: 'click-package-index', services: services}], changePage: change_page}), $(".sidebar").get(0));
     React.renderComponent(new Summary({services: services}), $(".main").get(0));
 }
 
@@ -296,17 +276,15 @@ function onUpdatedMetricsError(jqxhr, textStatus, errorThrown) {
     console.error(errorThrown);
 }
 
-$("#nav").delegate("li", "click", function(e) {
-    $(this).toggleClass("hidden");
-    if ($(this).data("page")) {
-        location.hash = $(this).data("page");
-    }
-    e.stopPropagation();
-});
-
 $("#nav ul[data-type]").spinner();
 
 $.ajax({url: "/metrics", dataType: 'json', success: onUpdatedMetrics, error: onUpdatedMetricsError});
+
+function change_page(page_name) {
+    location.hash = page_name;
+}
+
+React.renderComponent(new Navigation({environments: [{name: 'click-package-index'}], changePage: change_page}), $(".sidebar").get(0));
 
 $(".main").page_stack();
 
