@@ -289,7 +289,7 @@ function onUpdatedMetrics(data, textStatus, jqxhr) {
             node.data('data', haproxy);
         }
     });
-    $(".main").summary('services', services);
+    React.renderComponent(new Summary({services: services}), $(".main").get(0));
 }
 
 function onUpdatedMetricsError(jqxhr, textStatus, errorThrown) {

@@ -9,7 +9,7 @@
             }
             var details = page.split('/');
             if (details[1] == 'summary') {
-                this.element.summary({render_url: render_url, services: services});
+                React.renderComponent(new Summary({services: services}), this.element.get(0));
             } else if (details[1] == 'haproxy') {
                 var haproxy = services.haproxies.filter(function(haproxy) { return haproxy.name == details[2]; })[0];
                 graph_haproxy(haproxy, this.element);
