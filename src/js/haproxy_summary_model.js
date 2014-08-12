@@ -32,7 +32,7 @@ var HaproxySummaryModel = SummaryModel.extend({
                 namespace: backend.prefix,
             });
             targets.push({
-                stat: 'movingAverage(sumSeries('+$.map(backend.servers, function(server) { return server.prefix+'slim.1min.value'; }).join(',')+'),10)',
+                stat: 'sumSeries('+$.map(backend.servers, function(server) { return server.prefix+'slim.1min.value'; }).join(',')+')',
                 name: 'session limit',
                 namespace: backend.prefix,
             });
@@ -91,10 +91,13 @@ var HaproxySummaryModel = SummaryModel.extend({
             });
             var current_sessions = values[model.get_alias(namespace, 'current sessions')];
             var session_limit = values[model.get_alias(namespace, 'session limit')];
+            if (session_limit === undefined) {
+                session_limit = null;
+            }
             parsed.backends.push({
                 ratio: true,
                 a: current_sessions.toFixed(0),
-                b: session_limit.toFixed(0),
+                b: session_limit !== null ? session_limit.toFixed(0) : 'unlimited',
                 object_name: backend.name + ' backend',
                 label: 'sessions in use',
                 prefix: backend.prefix,

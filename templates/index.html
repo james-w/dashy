@@ -1,15 +1,9 @@
 <html>
 <head>
-<link rel="stylesheet" type="text/css" href="static/lib/ulysses/public/ulysses.css" media="screen" />
-<link rel="stylesheet" type="text/css" href="static/css/dashy-min.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="/static/lib/ulysses/public/ulysses.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="/static/css/dashy-min.css" media="screen" />
 </head>
 <body>
-<div class="ues-page ues-g-r">
-<div class="sidebar ues-u-1-5">
-</div>
-<div class="ues-u-4-5 main">
-</div>
-</div>
 </body>
 <script src="/static/lib/jquery/dist/jquery.min.js"></script>
 <script src="/static/lib/jqueryui/ui/jquery-ui.js"></script>
@@ -17,8 +11,10 @@
 <script src="/static/lib/underscore/underscore.js"></script>
 <script src="/static/lib/backbone/backbone.js"></script>
 <script src="/static/lib/react/react.js"></script>
+<script src="/static/lib/history.js/scripts/bundled/html4+html5/jquery.history.js"></script>
 <script src="/static/js/dashy-min.js"></script>
 <script type="text/javascript">
+var app;
 var metrics = [];
 var services = {haproxies: []};
 
@@ -103,7 +99,7 @@ function graph_haproxy(haproxy, target) {
     $(target).empty();
     $(target).append($("<h1 />", {id: 'title'}));
     $(target).append($("<div />", {id: 'graphs'}));
-    $(target).append($("<div />", {id: 'raw'}));
+    $(target).append($("<pre />", {id: 'raw'}));
     var graphs = [];
     $("#title").html("HAProxy: " + haproxy.name);
     graphs = haproxy_graphs(haproxy);
@@ -216,83 +212,78 @@ function graph_haproxy(haproxy, target) {
 }
 
 function onUpdatedMetrics(data, textStatus, jqxhr) {
-    metrics = data;
-    var tree = {};
-    $.each(metrics, function(i, metric) {
-        var node = tree;
-        parts = metric.split('.');
-        $.each(parts, function(j, part) {
-            if (!node.hasOwnProperty(part)) {
-                node[part] = {};
+    var content_type = jqxhr.getResponseHeader('Content-Type');
+    if (content_type.indexOf('html') > -1) {
+        console.log("Not logged in");
+    } else {
+        metrics = jQuery.parseJSON(data);
+        var tree = {};
+        $.each(metrics, function(i, metric) {
+            var node = tree;
+            parts = metric.split('.');
+            $.each(parts, function(j, part) {
+                if (!node.hasOwnProperty(part)) {
+                    node[part] = {};
+                }
+                node = node[part];
+            });
+        });
+        function check_all (current, subtree, prefix) {
+            if (subtree.haproxy) {
+                var haproxy = {name: current, backends: [], frontends: [], prefix: prefix + current + '.haproxy.'};
+                var fill_haproxy = function (current, subtree, prefix) {
+                    if (subtree.hasOwnProperty('BACKEND')) {
+                        backend = {
+                            name: current,
+                            prefix: prefix + current + '.BACKEND.',
+                            servers: [],
+                        };
+                        $.each(subtree, function(backend_server, server_info) {
+                            if (backend_server != 'BACKEND') {
+                                backend.servers.push({
+                                    name: backend_server,
+                                    prefix: prefix + current + "." + backend_server + ".",
+                                });
+                            }
+                        });
+                        haproxy.backends.push(backend);
+                    }
+                    if (subtree.hasOwnProperty('FRONTEND')) {
+                        frontend = {
+                            name: current,
+                            prefix: prefix + current + '.FRONTEND.'
+                        };
+                        haproxy.frontends.push(frontend);
+                    }
+                };
+                walk(subtree.haproxy, haproxy.prefix, fill_haproxy);
+                services.haproxies.push(haproxy);
             }
-            node = node[part];
-        });
-    });
-    function check_all (current, subtree, prefix) {
-        if (subtree.haproxy) {
-            var haproxy = {name: current, backends: [], frontends: [], prefix: prefix + current + '.haproxy.'};
-            var fill_haproxy = function (current, subtree, prefix) {
-                if (subtree.hasOwnProperty('BACKEND')) {
-                    backend = {
-                        name: current,
-                        prefix: prefix + current + '.BACKEND.',
-                        servers: [],
-                    };
-                    $.each(subtree, function(backend_server, server_info) {
-                        if (backend_server != 'BACKEND') {
-                            backend.servers.push({
-                                name: backend_server,
-                                prefix: prefix + current + "." + backend_server + ".",
-                            });
-                        }
-                    });
-                    haproxy.backends.push(backend);
-                }
-                if (subtree.hasOwnProperty('FRONTEND')) {
-                    frontend = {
-                        name: current,
-                        prefix: prefix + current + '.FRONTEND.'
-                    };
-                    haproxy.frontends.push(frontend);
-                }
-            };
-            walk(subtree.haproxy, haproxy.prefix, fill_haproxy);
-            services.haproxies.push(haproxy);
         }
-    }
-    function walk(subtree, prefix, fn) {
-        $.each(subtree, function(part, nexttree) {
-            fn(part, nexttree, prefix);
-            walk(nexttree, prefix + part + ".", fn);
-        });
-    }
-    walk(tree, "", check_all);
+        function walk(subtree, prefix, fn) {
+            $.each(subtree, function(part, nexttree) {
+                fn(part, nexttree, prefix);
+                walk(nexttree, prefix + part + ".", fn);
+            });
+        }
+        walk(tree, "", check_all);
 
-    React.renderComponent(new Navigation({environments: [{name: 'click-package-index', services: services}], changePage: change_page}), $(".sidebar").get(0));
-    React.renderComponent(new Summary({services: services}), $(".main").get(0));
+        React.renderComponent(new App({environments: [{name: 'click-package-index', services: services}]}), $("body").get(0));
+    }
 }
 
 function onUpdatedMetricsError(jqxhr, textStatus, errorThrown) {
+    console.error(textStatus);
     console.error(errorThrown);
 }
 
-$("#nav ul[data-type]").spinner();
+$.ajax({url: "/metrics", success: onUpdatedMetrics, error: onUpdatedMetricsError});
 
-$.ajax({url: "/metrics", dataType: 'json', success: onUpdatedMetrics, error: onUpdatedMetricsError});
+var app = React.renderComponent(new App({environments: [{name: 'click-package-index'}]}), $('body').get(0));
 
-function change_page(page_name) {
-    location.hash = page_name;
-}
-
-React.renderComponent(new Navigation({environments: [{name: 'click-package-index'}], changePage: change_page}), $(".sidebar").get(0));
-
-$(".main").page_stack();
-
-$(function(){
-  $(".main").page_stack('bind');
-  $(window).trigger( "hashchange" );
+$(function () {
+    app.bindToState();
 });
-
 
 </script>
 </html>

@@ -1,5 +1,5 @@
 VIRTUALENV=.env
-GRAPHITE_HOST?=http://localhost:8080/
+GRAPHITE_HOST?=https://graphite-as.admin.canonical.com/
 NODE_MODULES=./node_modules/
 GRUNT=$(NODE_MODULES)/.bin/grunt
 

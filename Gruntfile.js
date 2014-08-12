@@ -17,7 +17,7 @@ module.exports = function (grunt) {
             screen: {
                 files: {
                     'static/css/dashy-min.css': [
-                        SRC + '/css/dashy.css',
+                        SRC + '/css/*.css',
                     ]
                 }
             }

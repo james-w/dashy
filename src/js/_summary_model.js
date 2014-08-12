@@ -9,10 +9,10 @@ var SummaryModel = Backbone.Model.extend({
             var qs_part = 'target=alias(' + target.stat + ',"'+model.get_alias(target.namespace, target.name)+'")';
             qs_parts.push(qs_part);
         });
-        return 'render?format=json&from=-30min&' + qs_parts.join('&');
+        return '/render?format=json&from=-30min&' + qs_parts.join('&');
     },
     get_last_value: function(datapoints) {
-        return datapoints[datapoints.length-1][0];
+        return datapoints[datapoints.length-2][0];
     },
     get_last_values: function(data) {
         var values = {};

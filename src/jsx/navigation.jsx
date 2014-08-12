@@ -13,8 +13,8 @@ var Navigation = React.createClass({displayName: 'Navigation',
         e.stopPropagation();
     },
     changePage: function(page, e) {
-        e.stopPropagation();
         this.props.changePage.call(null, page);
+        e.stopPropagation();
     },
     render: function() {
         var description = this.props.environments;

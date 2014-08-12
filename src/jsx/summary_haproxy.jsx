@@ -4,9 +4,6 @@ var HaproxySummary = React.createClass({displayName: 'HaproxySummary',
         this.props.model.on('change', function() {
             this.forceUpdate();
         }.bind(this));
-        if (!this.props.model.get('parsed')) {
-            this.props.model.fetch();
-        }
     },
     render: function() {
         var sections = [
