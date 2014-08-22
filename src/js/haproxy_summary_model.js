@@ -9,12 +9,12 @@ var HaproxySummaryModel = SummaryModel.extend({
             targets.push({
                 namespace: frontend.prefix,
                 name: 'current sessions',
-                stat: 'movingAverage('+frontend.prefix+'scur.1min.value,10)',
+                stat: 'movingAverage('+frontend.prefix+'scur.'+haproxy.interval+'min.value,10)',
             });
             targets.push({
                 namespace: frontend.prefix,
                 name: 'session limit',
-                stat: 'movingAverage('+frontend.prefix+'slim.1min.value,10)',
+                stat: 'movingAverage('+frontend.prefix+'slim.'+haproxy.interval+'min.value,10)',
             });
         });
         $.each(haproxy.backends, function(i, backend) {
@@ -22,32 +22,32 @@ var HaproxySummaryModel = SummaryModel.extend({
                 return;
             }
             targets.push({
-                stat: 'movingAverage('+backend.prefix+'rate.1min.value,10)',
+                stat: 'movingAverage('+backend.prefix+'rate.'+haproxy.interval+'min.value,10)',
                 name: 'rate',
                 namespace: backend.prefix,
             });
             targets.push({
-                stat: 'movingAverage(sumSeries('+$.map(backend.servers, function(server) { return server.prefix+'scur.1min.value'; }).join(',')+'),10)',
+                stat: 'movingAverage(sumSeries('+$.map(backend.servers, function(server) { return server.prefix+'scur.'+haproxy.interval+'min.value'; }).join(',')+'),10)',
                 name: 'current sessions',
                 namespace: backend.prefix,
             });
             targets.push({
-                stat: 'sumSeries('+$.map(backend.servers, function(server) { return server.prefix+'slim.1min.value'; }).join(',')+')',
+                stat: 'sumSeries('+$.map(backend.servers, function(server) { return server.prefix+'slim.'+haproxy.interval+'min.value'; }).join(',')+')',
                 name: 'session limit',
                 namespace: backend.prefix,
             });
             targets.push({
-                stat: 'movingAverage('+backend.prefix+'qcur.1min.value,10)',
+                stat: 'movingAverage('+backend.prefix+'qcur.'+haproxy.interval+'min.value,10)',
                 name: 'current queue',
                 namespace: backend.prefix,
             });
             targets.push({
-                stat: 'scale(movingAverage(nonNegativeDerivative('+backend.prefix+'downtime.1min.value),10),0.0166)',
+                stat: 'scale(movingAverage(nonNegativeDerivative('+backend.prefix+'downtime.'+haproxy.interval+'min.value),10),0.0166)',
                 name: 'downtime',
                 namespace: backend.prefix,
             });
             targets.push({
-                stat: 'scale(movingAverage(nonNegativeDerivative(sumSeries('+backend.prefix+'{wretr,wredis}.1min.value)),10),0.0166)',
+                stat: 'scale(movingAverage(nonNegativeDerivative(sumSeries('+backend.prefix+'{wretr,wredis}.'+haproxy.interval+'min.value)),10),0.0166)',
                 name: 'retries',
                 namespace: backend.prefix,
             });

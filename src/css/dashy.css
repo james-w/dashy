@@ -184,3 +184,10 @@ body {
     font-size: 11px;
     color: #AAA;
 }
+
+.chart {
+    background-color: #fff;
+    margin-top: 12px;
+    padding: 15px;
+    border-radius: 4px;
+}

@@ -5,17 +5,16 @@
 </head>
 <body>
 </body>
-<script src="/static/lib/jquery/dist/jquery.min.js"></script>
+<script src="/static/lib/jquery/dist/jquery.js"></script>
 <script src="/static/lib/jqueryui/ui/jquery-ui.js"></script>
-<script src="/static/lib/d3/d3.min.js"></script>
+<script src="/static/lib/d3/d3.js"></script>
 <script src="/static/lib/underscore/underscore.js"></script>
 <script src="/static/lib/backbone/backbone.js"></script>
 <script src="/static/lib/react/react.js"></script>
 <script src="/static/lib/history.js/scripts/bundled/html4+html5/jquery.history.js"></script>
-<script src="/static/js/dashy-min.js"></script>
+<script src="/static/js/dashy.js"></script>
 <script type="text/javascript">
 var app;
-var metrics = [];
 var services = {haproxies: []};
 
 var render_url = '/render?format=json&';
@@ -211,14 +210,93 @@ function graph_haproxy(haproxy, target) {
     $("#raw").text(JSON.stringify(graphs, null, 4));
 }
 
+
+var environments = [
+    {
+        name: 'click-package-index',
+        services: {
+            haproxies: [
+                {
+                    name: 'app',
+                    prefix: 'statsd.staging.haproxy.click-package-index.app',
+                    interval: 5,
+                },
+                {
+                    name: 'cache',
+                    prefix: 'statsd.staging.haproxy.click-package-index.cache',
+                    interval: 5,
+                },
+            ],
+        }
+    }
+];
+
+
+function fill_environments(environments, tree) {
+    function get_subtree(tree, prefix) {
+        var subtree = tree;
+        var parts = prefix.split('.');
+        $.each(parts, function(i, part) {
+            subtree = subtree[part];
+            if (subtree === undefined) {
+                throw "Prefix not in metrics: " + prefix;
+            }
+        });
+        return subtree;
+    }
+    function fill_haproxy (current, subtree, prefix, haproxy) {
+        if (!haproxy.backends) {
+            haproxy.backends = [];
+        }
+        if (!haproxy.frontends) {
+            haproxy.frontends = [];
+        }
+        if (subtree.hasOwnProperty('BACKEND')) {
+            backend = {
+                name: current,
+                prefix: prefix + current + '.BACKEND.',
+                servers: [],
+            };
+            $.each(subtree, function(backend_server, server_info) {
+                if (backend_server != 'BACKEND') {
+                    backend.servers.push({
+                        name: backend_server,
+                        prefix: prefix + current + "." + backend_server + ".",
+                    });
+                }
+            });
+            haproxy.backends.push(backend);
+        }
+        if (subtree.hasOwnProperty('FRONTEND')) {
+            frontend = {
+                name: current,
+                prefix: prefix + current + '.FRONTEND.'
+            };
+            haproxy.frontends.push(frontend);
+        }
+    };
+    function walk(subtree, prefix, fn, obj) {
+        $.each(subtree, function(part, nexttree) {
+            fn(part, nexttree, prefix, obj);
+            walk(nexttree, prefix + part + ".", fn, obj);
+        });
+    }
+    $.each(environments, function(i, environment) {
+        $.each(environment.services.haproxies || [], function(i, haproxy) {
+            var subtree = get_subtree(tree, haproxy.prefix);
+            walk(subtree, haproxy.prefix + '.', fill_haproxy, haproxy);
+        });
+    })
+}
+
 function onUpdatedMetrics(data, textStatus, jqxhr) {
     var content_type = jqxhr.getResponseHeader('Content-Type');
     if (content_type.indexOf('html') > -1) {
         console.log("Not logged in");
+        React.renderComponent(new App({logged_in: false, loaded: true, graphite_host: '{{graphite_host|safe}}' }), $("body").get(0));
     } else {
-        metrics = jQuery.parseJSON(data);
         var tree = {};
-        $.each(metrics, function(i, metric) {
+        $.each(data, function(i, metric) {
             var node = tree;
             parts = metric.split('.');
             $.each(parts, function(j, part) {
@@ -228,58 +306,21 @@ function onUpdatedMetrics(data, textStatus, jqxhr) {
                 node = node[part];
             });
         });
-        function check_all (current, subtree, prefix) {
-            if (subtree.haproxy) {
-                var haproxy = {name: current, backends: [], frontends: [], prefix: prefix + current + '.haproxy.'};
-                var fill_haproxy = function (current, subtree, prefix) {
-                    if (subtree.hasOwnProperty('BACKEND')) {
-                        backend = {
-                            name: current,
-                            prefix: prefix + current + '.BACKEND.',
-                            servers: [],
-                        };
-                        $.each(subtree, function(backend_server, server_info) {
-                            if (backend_server != 'BACKEND') {
-                                backend.servers.push({
-                                    name: backend_server,
-                                    prefix: prefix + current + "." + backend_server + ".",
-                                });
-                            }
-                        });
-                        haproxy.backends.push(backend);
-                    }
-                    if (subtree.hasOwnProperty('FRONTEND')) {
-                        frontend = {
-                            name: current,
-                            prefix: prefix + current + '.FRONTEND.'
-                        };
-                        haproxy.frontends.push(frontend);
-                    }
-                };
-                walk(subtree.haproxy, haproxy.prefix, fill_haproxy);
-                services.haproxies.push(haproxy);
-            }
-        }
-        function walk(subtree, prefix, fn) {
-            $.each(subtree, function(part, nexttree) {
-                fn(part, nexttree, prefix);
-                walk(nexttree, prefix + part + ".", fn);
-            });
-        }
-        walk(tree, "", check_all);
 
-        React.renderComponent(new App({environments: [{name: 'click-package-index', services: services}]}), $("body").get(0));
+        fill_environments(environments, tree);
+        React.renderComponent(new App({environments: environments, logged_in: true, loaded: true}), $("body").get(0));
     }
 }
 
 function onUpdatedMetricsError(jqxhr, textStatus, errorThrown) {
+    console.error(jqxhr);
     console.error(textStatus);
     console.error(errorThrown);
 }
 
 $.ajax({url: "/metrics", success: onUpdatedMetrics, error: onUpdatedMetricsError});
 
-var app = React.renderComponent(new App({environments: [{name: 'click-package-index'}]}), $('body').get(0));
+var app = React.renderComponent(new App({loaded: false}), $('body').get(0));
 
 $(function () {
     app.bindToState();

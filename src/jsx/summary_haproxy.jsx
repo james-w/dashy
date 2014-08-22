@@ -1,7 +1,7 @@
 /** @jsx React.DOM */
 var HaproxySummary = React.createClass({displayName: 'HaproxySummary',
     componentDidMount: function() {
-        this.props.model.on('change', function() {
+        this.props.model.on('change', function(options) {
             this.forceUpdate();
         }.bind(this));
     },

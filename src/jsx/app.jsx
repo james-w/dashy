@@ -17,7 +17,7 @@ var App = React.createClass({displayName: 'App',
         });
     },
     changePage: function(page) {
-        History.replaceState({page: page}, page + " - dashy", '/' + page);
+        History.pushState({page: page}, page + " - dashy", '/' + page);
         if (this.refs.page) {
             this.refs.page.refresh();
         }
@@ -29,6 +29,17 @@ var App = React.createClass({displayName: 'App',
         var page;
         var parts = this.state.page.split('/');
         var env;
+        if (!this.props.loaded) {
+            return <div>
+                    <Loading />
+                    </div>;
+        }
+        if (!this.props.logged_in) {
+            return <div>
+                    <h1>Not logged in</h1>
+                    <p><a href={this.props.graphite_host} target="_blank">Open a tab</a> in firefox and log in to graphite instance, keep that tab open, and click <a href={"/login?return_to="+window.location.pathname}>here</a></p>;
+                    </div>;
+        } 
         if (!parts[0]) {
             page = <div>
                     <h1>Home</h1>
@@ -36,7 +47,14 @@ var App = React.createClass({displayName: 'App',
                     </div>;
         } else {
             env = this.props.environments.filter(function(environment) { return environment.name == parts[0]; })[0];
-            page = <Summary services={env.services} changePage={this.changePageforEnv.bind(null, env.name)} ref="page" />;
+            if (parts[1] == 'summary') {
+                page = <Summary services={env.services} changePage={this.changePageforEnv.bind(null, env.name)} ref="page" />;
+            } else if (parts[1] == 'haproxy') {
+                var haproxy = env.services.haproxies.filter(function(haproxy) { return haproxy.name == parts[2]; })[0];
+                page = <Haproxy haproxy={haproxy} ref={"haproxy/"+parts[2]} />;
+            } else {
+                page = <div>Not implemented yet</div>;
+            }
         }
         return <div className="ues-page ues-g-r">
             <div className="sidebar ues-u-1-5">

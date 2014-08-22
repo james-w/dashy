@@ -2,6 +2,7 @@ import argparse
 from flask import (
     Flask,
     make_response,
+    redirect,
     render_template,
     request,
     )
@@ -19,12 +20,17 @@ app = Flask('dashy')
 log = logging.getLogger(__name__)
 
 
-def proxy(session, url):
-    log.info("Requesting {}".format(url))
-    graphite_resp = session.get(url)
+def proxy(session, url, method='GET', data=None):
+    log.info("Requesting ({}) {}".format(method, url))
+    graphite_resp = session.request(method, url, data)
     log.info("Got {}".format(graphite_resp))
     print graphite_resp.content
-    response = make_response(graphite_resp.content, graphite_resp.status_code)
+    headers = {}
+    content_type = graphite_resp.headers.get('Content-Type')
+    if content_type:
+        headers['Content-Type'] = content_type
+    response = make_response(graphite_resp.content, graphite_resp.status_code,
+                             headers)
     return response
 
 
@@ -37,14 +43,26 @@ def render():
 @app.route('/metrics')
 def metrics():
     url = app.config['GRAPHITE_HOST'] + '/metrics/index.json'
-    return proxy(app.config['GRAPHITE_SESSION'], url)
+    resp = proxy(app.config['GRAPHITE_SESSION'], url)
+    print resp.headers
+    print resp.status_code
+    return resp
 
+
+@app.route('/login')
+def login():
+    cookies = get_cookies(app.config['GRAPHITE_HOST'])
+    session = requests.Session()
+    session.cookies = cookiejar_from_dict(cookies)
+    app.config['GRAPHITE_SESSION'] = session
+    return redirect(request.args.get('return_to', '/'))
 
 
 @app.route('/')
 @app.route('/<path:path>')
 def index(path=None):
-    return render_template('index.html')
+    return render_template('index.html',
+        graphite_host=app.config['GRAPHITE_HOST'])
 
 
 def get_firefox_sessionstore_path():
@@ -62,7 +80,7 @@ def get_cookies(host):
     with open(sessionstore_path) as f:
         store_content = json.load(f)
     for window in store_content['windows']:
-        for cookie in window['cookies']:
+        for cookie in window.get('cookies', []):
             if cookie['host'] == host:
                 cookies[cookie['name']] = cookie['value']
     print cookies
