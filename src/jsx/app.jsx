@@ -25,6 +25,15 @@ var App = React.createClass({displayName: 'App',
     changePageforEnv: function(env_name, page) {
         this.changePage(env_name + '/' + page);
     },
+    refresh: function() {
+        console.log("refresh");
+        if (this.refs.page) {
+            this.refs.page.refresh();
+        }
+    },
+    componentDidMount: function() {
+        setInterval(this.refresh, 60*1000);
+    },
     render: function() {
         var page;
         var parts = this.state.page.split('/');
@@ -51,13 +60,15 @@ var App = React.createClass({displayName: 'App',
                 page = <Summary services={env.services} changePage={this.changePageforEnv.bind(null, env.name)} ref="page" />;
             } else if (parts[1] == 'haproxy') {
                 var haproxy = env.services.haproxies.filter(function(haproxy) { return haproxy.name == parts[2]; })[0];
-                page = <Haproxy haproxy={haproxy} ref={"haproxy/"+parts[2]} />;
+                page = <Haproxy haproxy={haproxy} ref="page" environment_name={env.name} />;
             } else {
                 page = <div>Not implemented yet</div>;
             }
         }
         return <div className="ues-page ues-g-r">
             <div className="sidebar ues-u-1-5">
+                <h3 className="ues-u-4-5">dashy</h3>
+                <img src="/static/lib/open-iconic/svg/reload.svg" alt="refresh" title="refresh" className="reload ues-u-1-5" onClick={this.refresh} />
                 <Navigation environments={this.props.environments} changePage={this.changePage} />
             </div>
             <div className="ues-u-4-5 main">
