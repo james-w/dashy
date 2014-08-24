@@ -26,7 +26,6 @@ var App = React.createClass({displayName: 'App',
         this.changePage(env_name + '/' + page);
     },
     refresh: function() {
-        console.log("refresh");
         if (this.refs.page) {
             this.refs.page.refresh();
         }

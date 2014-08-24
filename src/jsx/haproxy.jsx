@@ -81,7 +81,6 @@ var Haproxy = React.createClass({displayName: 'Haproxy',
         return {summary_model: summary_model, graph_models: graph_models};
     },
     refresh: function() {
-        console.log("fetching");
         this.state.summary_model.fetch();
         $.each(this.state.graph_models, function(i, model) {
             model.fetch();
