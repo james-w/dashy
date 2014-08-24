@@ -38,9 +38,16 @@ var App = React.createClass({displayName: 'App',
         var parts = this.state.page.split('/');
         var env;
         if (!this.props.loaded) {
-            return <div>
-                    <Loading />
-                    </div>;
+            return <div className="ues-page ues-g-r">
+                    <div className="ues-u-1-5 sidebar">
+                        <h3 className="ues-u-4-5">dashy</h3>
+                    </div>
+                    <div className="ues-u-4-5 main">
+                        <h2>Loading environments</h2>
+                        <p>Information on the available environments is currently being loaded. This may take some time...</p>
+                        <Loading />
+                    </div>
+                   </div>;
         }
         if (!this.props.logged_in) {
             return <div>
