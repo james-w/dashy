@@ -17,7 +17,7 @@ var Navigation = React.createClass({displayName: 'Navigation',
         e.stopPropagation();
     },
     render: function() {
-        var description = this.props.environments;
+        var description = this.props.environments || [];
         var environments = [];
         var component = this;
         $.each(description, function(i, environment) {

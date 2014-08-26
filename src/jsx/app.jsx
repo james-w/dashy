@@ -7,7 +7,7 @@ var App = React.createClass({displayName: 'App',
             page = window.location.pathname;
             page = page.slice(1, page.length);
         }
-        return {page: page};
+        return {page: page, last_updated: null};
     },
     bindToState: function() {
         var component = this;
@@ -26,55 +26,53 @@ var App = React.createClass({displayName: 'App',
         this.changePage(env_name + '/' + page);
     },
     refresh: function() {
-        if (this.refs.page) {
+        if (this.refs.page && this.refs.page.refresh) {
             this.refs.page.refresh();
+            this.setState({last_updated: new Date()});
         }
     },
     componentDidMount: function() {
         setInterval(this.refresh, 60*1000);
+        this.setState({last_updated: new Date()});
     },
     render: function() {
         var page;
         var parts = this.state.page.split('/');
         var env;
         if (!this.props.loaded) {
-            return <div className="ues-page ues-g-r">
-                    <div className="ues-u-1-5 sidebar">
-                        <h3 className="ues-u-4-5">dashy</h3>
-                    </div>
-                    <div className="ues-u-4-5 main">
+            page = <div>
                         <h2>Loading environments</h2>
                         <p>Information on the available environments is currently being loaded. This may take some time...</p>
                         <Loading />
-                    </div>
                    </div>;
-        }
-        if (!this.props.logged_in) {
-            return <div>
+        } else if (!this.props.logged_in) {
+            page = <div>
                     <h1>Not logged in</h1>
                     <p><a href={this.props.graphite_host} target="_blank">Open a tab</a> in firefox and log in to graphite instance, keep that tab open, and click <a href={"/login?return_to="+window.location.pathname}>here</a></p>;
                     </div>;
-        } 
-        if (!parts[0]) {
-            page = <div>
-                    <h1>Home</h1>
-                    <p>Select an environment or  service from the left to begin</p>
-                    </div>;
         } else {
-            env = this.props.environments.filter(function(environment) { return environment.name == parts[0]; })[0];
-            if (parts[1] == 'summary') {
-                page = <Summary services={env.services} changePage={this.changePageforEnv.bind(null, env.name)} ref="page" />;
-            } else if (parts[1] == 'haproxy') {
-                var haproxy = env.services.haproxies.filter(function(haproxy) { return haproxy.name == parts[2]; })[0];
-                page = <Haproxy haproxy={haproxy} ref="page" environment_name={env.name} />;
+            if (!parts[0]) {
+                page = <div>
+                        <h1>Home</h1>
+                        <p>Select an environment or  service from the left to begin</p>
+                        </div>;
             } else {
-                page = <div>Not implemented yet</div>;
+                env = this.props.environments.filter(function(environment) { return environment.name == parts[0]; })[0];
+                if (parts[1] == 'summary') {
+                    page = <Summary services={env.services} changePage={this.changePageforEnv.bind(null, env.name)} ref="page" />;
+                } else if (parts[1] == 'haproxy') {
+                    var haproxy = env.services.haproxies.filter(function(haproxy) { return haproxy.name == parts[2]; })[0];
+                    page = <Haproxy haproxy={haproxy} ref="page" environment_name={env.name} />;
+                } else {
+                    page = <div>Not implemented yet</div>;
+                }
             }
         }
         return <div className="ues-page ues-g-r">
             <div className="sidebar ues-u-1-5">
                 <h3 className="ues-u-4-5">dashy</h3>
                 <img src="/static/lib/open-iconic/svg/reload.svg" alt="refresh" title="refresh" className="reload ues-u-1-5" onClick={this.refresh} />
+                <p className="last_updated">Last updated: {this.state.last_updated && this.state.last_updated.toISOString()}</p>
                 <Navigation environments={this.props.environments} changePage={this.changePage} />
             </div>
             <div className="ues-u-4-5 main">

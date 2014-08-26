@@ -38,7 +38,7 @@ var BasicGraph = React.createBackboneClass({displayName: 'BasicGraph',
             }
             lines.push(<Line key={i} index={i} ref={"line"+i} data={d.datapoints} xScale={xScale} yScale={yScale} margin={margin} highlighted={h} />);
         });
-        return <Chart width={width+150} height={height} margin={margin} title={model.get('title')} >
+        return <Chart width={width+150} height={height+10} margin={margin} title={model.get('title')} >
             <XAxis width={width} height={height} margin={margin} scale={xScale} />
             <YAxis width={width} height={height} margin={margin} scale={yScale} />
             <Grid width={width} height={height} margin={margin} xScale={xScale} yScale={yScale} />
