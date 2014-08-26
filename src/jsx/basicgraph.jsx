@@ -1,9 +1,17 @@
 /** @jsx React.DOM */
 var BasicGraph = React.createClass({displayName: 'BasicGraph',
+    getInitialState: function() {
+        return {highlighted:{}};
+    },
     componentDidMount: function() {
         this.props.model.on('change', function(options) {
             this.forceUpdate();
         }.bind(this));
+    },
+    doHighlight: function(i, highlight) {
+        var h = this.state.highlighted;
+        h[i] = highlight;
+        this.setState({highlighted: h});
     },
     render: function() {
         var width = this.props.width;
@@ -27,12 +35,19 @@ var BasicGraph = React.createClass({displayName: 'BasicGraph',
             yScale.domain([0, 100]);
         }
         var lines = [];
+        var highlighted = this.state.highlighted;
         $.each(data || [], function(i, d) {
-            lines.push(<Line key={i} index={i} data={d.datapoints} xScale={xScale} yScale={yScale} margin={margin} />);
+            var h = false;
+            if (highlighted.hasOwnProperty(i)) {
+                h = highlighted[i];
+            }
+            lines.push(<Line key={i} index={i} ref={"line"+i} data={d.datapoints} xScale={xScale} yScale={yScale} margin={margin} highlighted={h} />);
         });
-        return <Chart width={width} height={height} margin={margin} title={model.get('title')} >
-            <XAxis width={width} height={height} margin={margin} data={model.get('data')} scale={xScale} />
-            <YAxis width={width} height={height} margin={margin} data={model.get('data')} scale={yScale} />
+        return <Chart width={width+150} height={height} margin={margin} title={model.get('title')} >
+            <XAxis width={width} height={height} margin={margin} scale={xScale} />
+            <YAxis width={width} height={height} margin={margin} scale={yScale} />
+            <Grid width={width} height={height} margin={margin} xScale={xScale} yScale={yScale} />
+            <Legend width={width+150} height={height} data={data} doHighlight={this.doHighlight} />
             {lines}
         </Chart>;
     },

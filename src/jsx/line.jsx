@@ -12,7 +12,11 @@ var Line = React.createClass({displayName: 'Line',
                     return yScale(d[0]);
                 });
         var path = line(this.props.data || []);
-        return <path className={"line line"+this.props.index} d={path} transform={"translate("+margin+","+margin+")"} />;
+        var classes = "line line"+this.props.index;
+        if (this.props.highlighted) {
+            classes += " hover";
+        }
+        return <path className={classes} d={path} transform={"translate("+margin+","+margin+")"} />;
     },
 });
 
