@@ -1,12 +1,7 @@
 /** @jsx React.DOM */
-var BasicGraph = React.createClass({displayName: 'BasicGraph',
+var BasicGraph = React.createBackboneClass({displayName: 'BasicGraph',
     getInitialState: function() {
         return {highlighted:{}};
-    },
-    componentDidMount: function() {
-        this.props.model.on('change', function(options) {
-            this.forceUpdate();
-        }.bind(this));
     },
     doHighlight: function(i, highlight) {
         var h = this.state.highlighted;

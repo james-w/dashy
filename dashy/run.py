@@ -24,7 +24,7 @@ def proxy(session, url, method='GET', data=None):
     log.info("Requesting ({}) {}".format(method, url))
     graphite_resp = session.request(method, url, data)
     log.info("Got {}".format(graphite_resp))
-    print graphite_resp.content
+    #print graphite_resp.content
     headers = {}
     content_type = graphite_resp.headers.get('Content-Type')
     if content_type:

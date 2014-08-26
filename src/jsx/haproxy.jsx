@@ -70,21 +70,29 @@ var Haproxy = React.createClass({displayName: 'Haproxy',
         });
         return graphs;
     },
-    getInitialState: function() {
+    getNewState: function(haproxy) {
         var summary_model = new HaproxySummaryModel();
-        summary_model.set({spec: this.props.haproxy});
+        summary_model.set({spec: haproxy});
         summary_model.fetch();
-        var graph_models = this.get_graph_models(this.props.haproxy);
+        var graph_models = this.get_graph_models(haproxy);
         $.each(graph_models, function(i, model) {
             model.fetch();
         });
         return {summary_model: summary_model, graph_models: graph_models};
+    },
+    getInitialState: function() {
+        return this.getNewState(this.props.haproxy);
     },
     refresh: function() {
         this.state.summary_model.fetch();
         $.each(this.state.graph_models, function(i, model) {
             model.fetch();
         });
+    },
+    componentWillReceiveProps: function(nextProps) {
+        if (this.state.summary_model.get('spec').name != nextProps.haproxy.name) {
+            this.setState(this.getNewState(nextProps.haproxy));
+        }
     },
     render: function() {
         var height = 400;
